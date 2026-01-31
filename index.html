@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BIN Generator Pro</title>
+    <style>
+        /* --- 1. Base Setup --- */
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Poppins', sans-serif;
+            background: #0f0c29;
+            background: linear-gradient(to right, #24243e, #302b63, #0f0c29);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #fff;
+            overflow-y: auto;
+        }
+
+        /* --- 2. Glassmorphism Card --- */
+        .glass-container {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 40px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+            position: relative;
+            margin: 20px 0;
+        }
+
+        /* Glowing Orbs */
+        .orb { position: absolute; border-radius: 50%; filter: blur(80px); z-index: -1; }
+        .orb-1 { width: 200px; height: 200px; background: #ff00cc; top: -50px; left: -50px; opacity: 0.4; }
+        .orb-2 { width: 200px; height: 200px; background: #3333ff; bottom: -50px; right: -50px; opacity: 0.4; }
+
+        h2 { text-align: center; margin-bottom: 25px; letter-spacing: 1px; text-shadow: 0 0 10px rgba(255,255,255,0.3); }
+
+        /* --- 3. Inputs --- */
+        .input-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-size: 0.9rem; color: #ccc; }
+        
+        input, select {
+            width: 100%; padding: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 10px; color: #fff; font-size: 1rem;
+            outline: none; transition: 0.3s; box-sizing: border-box;
+        }
+        select option { background: #1a1a2e; color: #fff; }
+        input:focus, select:focus { border-color: #00d2ff; box-shadow: 0 0 15px rgba(0, 210, 255, 0.5); }
+
+        /* --- 4. Network Badges --- */
+        .network-badges { display: flex; gap: 10px; margin-bottom: 10px; justify-content: center; }
+        .badge {
+            padding: 5px 12px; border-radius: 20px; font-size: 0.8rem;
+            background: rgba(255,255,255,0.1); color: #777; transition: 0.3s; border: 1px solid transparent;
+        }
+        .badge.active {
+            background: rgba(0, 255, 127, 0.2); color: #00ff7f;
+            border-color: #00ff7f; box-shadow: 0 0 10px rgba(0, 255, 127, 0.4); font-weight: bold;
+        }
+
+        /* --- 5. Layout & Buttons --- */
+        .row { display: flex; gap: 15px; }
+        .col { flex: 1; }
+
+        /* General Button Style */
+        button {
+            border: none; border-radius: 10px; color: white;
+            font-size: 1rem; font-weight: 600; cursor: pointer; transition: 0.3s;
+        }
+        button:active { transform: scale(0.98); }
+
+        /* Generate Button */
+        .btn-generate {
+            width: 100%; padding: 15px; margin-top: 20px;
+            background: linear-gradient(90deg, #00d2ff, #3a7bd5);
+            box-shadow: 0 0 20px rgba(0, 210, 255, 0.4);
+        }
+        .btn-generate:hover { transform: translateY(-2px); box-shadow: 0 0 30px rgba(0, 210, 255, 0.6); }
+
+        /* Action Buttons Container (Hidden by default) */
+        .action-buttons {
+            display: flex; gap: 10px; margin-top: 10px;
+            opacity: 0; pointer-events: none; transition: 0.3s; /* Smooth Fade In */
+        }
+        .action-buttons.show { opacity: 1; pointer-events: auto; }
+
+        /* Copy Button */
+        .btn-copy {
+            flex: 2; padding: 12px;
+            background: rgba(0, 255, 127, 0.2); border: 1px solid rgba(0, 255, 127, 0.4); color: #00ff7f;
+        }
+        .btn-copy:hover { background: rgba(0, 255, 127, 0.3); box-shadow: 0 0 15px rgba(0, 255, 127, 0.3); }
+
+        /* Clear Button */
+        .btn-clear {
+            flex: 1; padding: 12px;
+            background: rgba(255, 65, 108, 0.2); border: 1px solid rgba(255, 65, 108, 0.4); color: #ff4b2b;
+        }
+        .btn-clear:hover { background: rgba(255, 65, 108, 0.3); box-shadow: 0 0 15px rgba(255, 65, 108, 0.3); }
+
+        /* --- 6. Result Area --- */
+        .result-area {
+            margin-top: 25px; background: rgba(0,0,0,0.3);
+            border-radius: 10px; padding: 10px; border: 1px solid rgba(255,255,255,0.1);
+        }
+        textarea {
+            width: 100%; height: 150px; background: transparent; border: none;
+            color: #00ffcc; font-family: 'Courier New', monospace; resize: none; outline: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+
+    <div class="glass-container">
+        <h2>BIN  Generator by LOKI</h2>
+
+        <div class="network-badges">
+            <span id="badge-visa" class="badge">VISA</span>
+            <span id="badge-master" class="badge">MASTER</span>
+            <span id="badge-union" class="badge">UNION</span>
+        </div>
+
+        <div class="input-group">
+            <label>BIN (Bank Identification Number)</label>
+            <input type="text" id="binInput" placeholder="e.g. 400000" maxlength="12" oninput="detectNetwork()">
+        </div>
+
+        <div class="row">
+            <div class="col">
+                <label>Month</label>
+                <select id="monthSelect">
+                    <option value="Random">Random</option>
+                    <option value="01">01</option>
+                    <option value="02">02</option>
+                    <option value="03">03</option>
+                    <option value="04">04</option>
+                    <option value="05">05</option>
+                    <option value="06">06</option>
+                    <option value="07">07</option>
+                    <option value="08">08</option>
+                    <option value="09">09</option>
+                    <option value="10">10</option>
+                    <option value="11">11</option>
+                    <option value="12">12</option>
+                </select>
+            </div>
+            <div class="col">
+                <label>Year</label>
+                <select id="yearSelect">
+                    <option value="Random">Random</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="row" style="margin-top: 15px;">
+            <div class="col">
+                <label>CVV (Blank = Rand)</label>
+                <input type="text" id="cvvInput" placeholder="xxx" maxlength="4">
+            </div>
+            <div class="col">
+                <label>Quantity</label>
+                <input type="number" id="qtyInput" value="10" min="1" max="100">
+            </div>
+        </div>
+
+        <button class="btn-generate" onclick="generateCards()">GENERATE CARDS</button>
+
+        <div class="result-area">
+            <textarea id="resultOutput" readonly placeholder="Results will appear here..."></textarea>
+        </div>
+        
+        <div id="actionButtons" class="action-buttons">
+            <button id="btnCopy" class="btn-copy" onclick="copyResults()">📋 COPY ALL</button>
+            <button class="btn-clear" onclick="clearAll()">🗑️ CLEAR</button>
+        </div>
+
+    </div>
+
+    <script>
+        // --- 1. Populate Years ---
+        const yearSelect = document.getElementById('yearSelect');
+        const currentYear = new Date().getFullYear();
+        for (let i = 0; i < 10; i++) {
+            let y = currentYear + i;
+            let option = document.createElement('option');
+            option.value = y;
+            option.text = y;
+            yearSelect.appendChild(option);
+        }
+
+        // --- 2. Auto Detect Network ---
+        function detectNetwork() {
+            const bin = document.getElementById('binInput').value;
+            const visa = document.getElementById('badge-visa');
+            const master = document.getElementById('badge-master');
+            const union = document.getElementById('badge-union');
+
+            visa.classList.remove('active');
+            master.classList.remove('active');
+            union.classList.remove('active');
+
+            if (bin.startsWith('4')) {
+                visa.classList.add('active');
+            } else if (/^5[1-5]|^2[2-7]/.test(bin)) {
+                master.classList.add('active');
+            } else if (bin.startsWith('62')) {
+                union.classList.add('active');
+            }
+        }
+
+        // --- 3. Luhn Logic ---
+        function generateLuhnDigit(partialCardNumber) {
+            for (let check = 0; check <= 9; check++) {
+                let testNumber = partialCardNumber + check;
+                if (isValidLuhn(testNumber)) return check;
+            }
+            return 0;
+        }
+
+        function isValidLuhn(value) {
+            if (/[^0-9-\s]+/.test(value)) return false;
+            let nCheck = 0, bEven = false;
+            value = value.replace(/\D/g, "");
+            for (let n = value.length - 1; n >= 0; n--) {
+                let cDigit = value.charAt(n), nDigit = parseInt(cDigit, 10);
+                if (bEven) { if ((nDigit *= 2) > 9) nDigit -= 9; }
+                nCheck += nDigit;
+                bEven = !bEven;
+            }
+            return (nCheck % 10) == 0;
+        }
+
+        // --- 4. Generate Cards ---
+        function generateCards() {
+            const bin = document.getElementById('binInput').value.trim();
+            const qty = parseInt(document.getElementById('qtyInput').value);
+            const userMonth = document.getElementById('monthSelect').value;
+            const userYear = document.getElementById('yearSelect').value;
+            const userCvv = document.getElementById('cvvInput').value.trim();
+            const output = document.getElementById('resultOutput');
+            const actionBtns = document.getElementById('actionButtons');
+
+            if (!bin || bin.length < 6) {
+                alert("Please enter a valid BIN (at least 6 digits)");
+                return;
+            }
+
+            let results = [];
+            for (let i = 0; i < qty; i++) {
+                let currentNumber = bin;
+                while (currentNumber.length < 15) { // 16-1
+                    currentNumber += Math.floor(Math.random() * 10);
+                }
+                let checkDigit = generateLuhnDigit(currentNumber);
+                let finalCard = currentNumber + checkDigit;
+
+                let finalMonth = userMonth === "Random" ? (Math.floor(Math.random() * 12) + 1).toString().padStart(2, '0') : userMonth;
+                let finalYear = userYear === "Random" ? currentYear + Math.floor(Math.random() * 10) : userYear;
+                let finalCvv = userCvv ? userCvv : Math.floor(Math.random() * 900 + 100);
+
+                results.push(`${finalCard}|${finalMonth}|${finalYear}|${finalCvv}`);
+            }
+
+            output.value = results.join("\n");
+            
+            // SHOW BUTTONS
+            actionBtns.classList.add('show');
+        }
+
+        // --- 5. Copy Function ---
+        function copyResults() {
+            const output = document.getElementById('resultOutput');
+            const btn = document.getElementById('btnCopy');
+            
+            if (!output.value) return;
+
+            output.select();
+            output.setSelectionRange(0, 99999);
+            
+            navigator.clipboard.writeText(output.value).then(() => {
+                const originalText = "📋 COPY ALL";
+                btn.innerHTML = "COPIED! ✅";
+                btn.style.color = "#fff";
+                
+                setTimeout(() => {
+                    btn.innerHTML = originalText;
+                    btn.style.color = "#00ff7f";
+                }, 2000);
+            });
+        }
+
+        // --- 6. Clear All Function ---
+        function clearAll() {
+            // Reset Inputs
+            document.getElementById('binInput').value = "";
+            document.getElementById('monthSelect').value = "Random";
+            document.getElementById('yearSelect').value = "Random";
+            document.getElementById('cvvInput').value = "";
+            document.getElementById('qtyInput').value = "10";
+            
+            // Clear Result
+            document.getElementById('resultOutput').value = "";
+            
+            // Reset Badges
+            document.getElementById('badge-visa').classList.remove('active');
+            document.getElementById('badge-master').classList.remove('active');
+            document.getElementById('badge-union').classList.remove('active');
+
+            // HIDE BUTTONS
+            document.getElementById('actionButtons').classList.remove('show');
+        }
+    </script>
+</body>
+</html>
