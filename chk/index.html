@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Pro Gateway Checker</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        /* --- 1. Base Setup --- */
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&family=Courier+New:wght@400;700&display=swap');
+
+        body {
+            margin: 0; padding: 20px;
+            font-family: 'Poppins', sans-serif;
+            background: #0f0c29;
+            background: linear-gradient(to right, #24243e, #302b63, #0f0c29);
+            min-height: 100vh;
+            box-sizing: border-box;
+            color: #fff;
+        }
+
+        /* Scrollbar Styling */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.05); }
+        ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 4px; }
+
+        /* --- Main Wrapper (Responsive Flex) --- */
+        .main-wrapper {
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            gap: 30px;
+            max-width: 1200px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+            transition: all 0.3s ease;
+        }
+
+        /* --- Glassmorphism Style --- */
+        .glass-style {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        /* --- 2. Main Checker Box --- */
+        .glass-box {
+            padding: 30px;
+            width: 550px; /* Desktop Fixed Width */
+            flex-shrink: 0;
+            transition: width 0.3s ease;
+        }
+
+        /* Background Orbs */
+        .orb { position: absolute; border-radius: 50%; filter: blur(90px); z-index: -1; }
+        .orb-1 { width: 300px; height: 300px; background: #7209b7; top: -100px; left: -100px; opacity: 0.4; }
+        .orb-2 { width: 300px; height: 300px; background: #4361ee; bottom: -100px; right: -100px; opacity: 0.4; }
+
+        h2 { text-align: center; margin: 0 0 5px 0; font-weight: 600; letter-spacing: 1px; }
+        .subtitle { text-align: center; font-size: 0.85rem; color: #aaa; margin-bottom: 25px; }
+
+        /* --- Inputs --- */
+        textarea {
+            width: 100%; height: 120px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px; color: #00ffcc; font-size: 0.9rem; outline: none;
+            padding: 15px; box-sizing: border-box; font-family: 'Courier New', monospace;
+            resize: vertical; transition: 0.3s;
+        }
+        textarea:focus { border-color: #4cc9f0; box-shadow: 0 0 15px rgba(76, 201, 240, 0.3); }
+
+        /* --- Dashboard Stats --- */
+        .stats-row { display: flex; gap: 10px; margin: 20px 0; }
+        .stat-box {
+            flex: 1; background: rgba(255, 255, 255, 0.05); padding: 10px;
+            border-radius: 10px; text-align: center; border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .stat-label { font-size: 0.75rem; color: #ccc; display: block; margin-bottom: 2px; }
+        .stat-val { font-size: 1.2rem; font-weight: bold; }
+        .c-live { color: #00ff7f; } .c-die { color: #ff4b2b; } .c-total { color: #fff; }
+
+        /* --- Buttons --- */
+        .btn-row { display: flex; gap: 15px; margin-bottom: 20px; }
+        button {
+            flex: 1; padding: 14px; border: none; border-radius: 12px;
+            color: white; font-weight: 600; cursor: pointer; transition: 0.3s;
+            font-size: 1rem; display: flex; align-items: center; justify-content: center; gap: 8px;
+        }
+        .btn-start { background: linear-gradient(135deg, #4361ee, #3a0ca3); box-shadow: 0 4px 15px rgba(67, 97, 238, 0.4); }
+        .btn-start:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(67, 97, 238, 0.6); }
+        .btn-stop { background: rgba(255, 65, 108, 0.15); border: 1px solid rgba(255, 65, 108, 0.3); color: #ff4b2b; }
+        .btn-stop:hover { background: rgba(255, 65, 108, 0.25); }
+
+        /* --- Logs --- */
+        .log-container {
+            display: flex; flex-direction: column; gap: 10px;
+            max-height: 300px; overflow-y: auto; padding-right: 5px;
+        }
+
+        /* --- 3. LIVE BOX (Animation) --- */
+        .live-box-wrapper {
+            display: none; /* Hidden initially */
+            width: 400px; /* Desktop Fixed Width */
+            flex-shrink: 0;
+            position: relative;
+            border-radius: 20px;
+        }
+        
+        .live-box-wrapper.show {
+            display: block;
+            animation: popIn 0.5s ease forwards;
+        }
+
+        /* Running Border Animation */
+        @property --angle { syntax: '<angle>'; initial-value: 0deg; inherits: false; }
+        .live-box-wrapper::after, .live-box-wrapper::before {
+            content: ''; position: absolute; height: 100%; width: 100%;
+            top: 50%; left: 50%; translate: -50% -50%; z-index: -1;
+            padding: 3px; border-radius: 22px;
+            background-image: conic-gradient(from var(--angle), #00ff7f, #00d2ff, #3a7bd5, #00ff7f);
+            animation: 3s rotate linear infinite;
+        }
+        .live-box-wrapper::before { filter: blur(1.5rem); opacity: 0.5; }
+        @keyframes rotate { from { --angle: 0deg; } to { --angle: 360deg; } }
+        @keyframes popIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+
+        .live-box-container {
+            padding: 25px; height: 100%; min-height: 200px;
+            background: rgba(15, 12, 41, 0.9); /* Darker BG */
+            border-radius: 20px;
+        }
+
+        .live-title {
+            text-align: center; font-weight: 700; color: #00ff7f;
+            margin-bottom: 15px; letter-spacing: 1px;
+            text-shadow: 0 0 10px rgba(0, 255, 127, 0.5);
+        }
+        .live-results-list {
+            display: flex; flex-direction: column; gap: 10px;
+            max-height: 500px; overflow-y: auto; padding-right: 5px;
+        }
+
+        /* --- Cards UI --- */
+        .res-card {
+            background: rgba(255, 255, 255, 0.03);
+            border-left: 4px solid #555; border-radius: 8px;
+            padding: 12px 15px; font-size: 0.9rem;
+            position: relative; animation: fadeIn 0.4s ease-in-out;
+            display: flex; align-items: flex-start; gap: 12px;
+        }
+        .res-card.live { border-left-color: #00ff7f; background: linear-gradient(90deg, rgba(0,255,127,0.1), transparent); }
+        .res-card.die { border-left-color: #ff4b2b; }
+        .res-card.unknown { border-left-color: #ffbd33; }
+        .res-card.premium-live {
+            border: 1px solid rgba(0, 255, 127, 0.3);
+            border-left: 4px solid #00ff7f;
+            background: rgba(0, 255, 127, 0.05);
+            box-shadow: 0 4px 15px rgba(0, 255, 127, 0.1);
+        }
+        .res-icon { font-size: 1.2rem; margin-top: 2px; }
+        .live .res-icon, .premium-live .res-icon { color: #00ff7f; }
+        .die .res-icon { color: #ff4b2b; }
+        .res-content { flex: 1; word-break: break-all; }
+        .res-cc { font-family: 'Courier New', monospace; font-weight: bold; font-size: 1rem; color: #fff; margin-bottom: 4px; display: block; }
+        .res-info { font-size: 0.8rem; color: #ccc; line-height: 1.4; }
+        .res-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; background: rgba(255,255,255,0.1); margin-top: 5px; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* ========================================= */
+        /* MOBILE RESPONSIVE LOGIC          */
+        /* ========================================= */
+        @media (max-width: 950px) {
+            body { padding: 10px; }
+            
+            .main-wrapper {
+                flex-direction: column; /* Stack vertically */
+                align-items: center;
+                gap: 20px;
+            }
+
+            .glass-box {
+                width: 100%; /* Full width on mobile */
+                max-width: 100%;
+                padding: 20px;
+            }
+
+            .live-box-wrapper {
+                width: 100%; /* Full width on mobile */
+                max-width: 100%;
+            }
+            
+            .live-box-container {
+                min-height: auto; /* Allow auto height */
+            }
+
+            /* Adjust text sizes for mobile */
+            .res-cc { font-size: 0.9rem; }
+            h2 { font-size: 1.2rem; }
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+
+    <div class="main-wrapper">
+        <div class="glass-box glass-style">
+            <h2>GATEWAY CHECKER</h2>
+            <div class="subtitle">API Response Fetcher Demo</div>
+
+            <div class="stats-row">
+                <div class="stat-box">
+                    <span class="stat-label">LIVE</span>
+                    <span class="stat-val c-live" id="liveCount">0</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-label">DIE</span>
+                    <span class="stat-val c-die" id="dieCount">0</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-label">TOTAL</span>
+                    <span class="stat-val c-total" id="totalCount">0</span>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <label style="color:#aaa; font-size:0.8rem; margin-bottom:5px; display:block;">CARD LIST</label>
+                <textarea id="cardList" placeholder="536385xxxxxxxxxx|12|25|xxx&#10;411111xxxxxxxxxx|05|24|xxx"></textarea>
+            </div>
+
+            <div class="btn-row">
+                <button class="btn-start" id="btnStart" onclick="startCheck()">
+                    <i class="fas fa-play"></i> START
+                </button>
+                <button class="btn-stop" onclick="stopCheck()">
+                    <i class="fas fa-stop"></i> STOP
+                </button>
+            </div>
+
+            <label style="color:#aaa; font-size:0.8rem; margin-bottom:10px; display:block;">LOGS (Die/Unknown)</label>
+            <div class="log-container" id="logContainer">
+                <div style="text-align: center; color: #555; padding: 20px; font-size: 0.85rem;">
+                    Waiting to start...
+                </div>
+            </div>
+        </div>
+
+        <div class="live-box-wrapper" id="liveBoxWrapper">
+            <div class="live-box-container glass-style">
+                 <div class="live-title">
+                    <i class="fas fa-bolt"></i> LIVE HITS
+                </div>
+                <div class="live-results-list" id="liveResultsList">
+                    </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let isRunning = false;
+        let stats = { live: 0, die: 0, total: 0 };
+        
+        const api_url = "https://backend.lokisir.com"; 
+
+        const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+        function stopCheck() {
+            isRunning = false;
+            document.getElementById("btnStart").innerHTML = '<i class="fas fa-play"></i> START';
+            document.getElementById("btnStart").style.opacity = "1";
+        }
+
+        async function startCheck() {
+            if (isRunning) return;
+
+            const inputVal = document.getElementById('cardList').value.trim();
+            if (!inputVal) {
+                alert("Please enter cards first!");
+                return;
+            }
+
+            const cards = inputVal.split('\n').filter(line => line.trim() !== "");
+            if (cards.length === 0) return;
+
+            // Reset UI
+            isRunning = true;
+            stats = { live: 0, die: 0, total: 0 };
+            updateStats();
+            document.getElementById("logContainer").innerHTML = ""; 
+            document.getElementById("liveResultsList").innerHTML = ""; 
+            
+            // Auto hide/show logic based on state
+            document.getElementById("liveBoxWrapper").classList.remove("show");
+
+            document.getElementById("btnStart").innerHTML = '<i class="fas fa-spinner fa-spin"></i> CHECKING...';
+            
+            for (let i = 0; i < cards.length; i++) {
+                if (!isRunning) break;
+
+                const card = cards[i].trim();
+                const tempId = `temp-${i}`;
+                showLoadingCard(tempId, card);
+
+                try {
+                    const response = await fetch(api_url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ "data": card })
+                    });
+
+                    const res = await response.json();
+                    
+                    const tempEl = document.getElementById(tempId);
+                    if(tempEl) tempEl.remove();
+
+                    processResponse(res, card);
+
+                } catch (error) {
+                    console.error(error);
+                    const tempEl = document.getElementById(tempId);
+                    if(tempEl) tempEl.remove();
+                    addLogCard("die", card, "Server Error / Proxy Fail", "Error");
+                    stats.die++;
+                }
+
+                stats.total++;
+                updateStats();
+                await sleep(2000); 
+            }
+
+            stopCheck();
+        }
+
+        function processResponse(res, card) {
+            const code = res.code;
+            const msg = res.message || res.msg || "Unknown Response";
+            
+            const cardData = res.card || {};
+            const country = cardData.country || {};
+            const countryName = country.name || "N/A";
+            const countryEmoji = country.emoji || "";
+            const currency = country.currency || "";
+
+            if (code === 1) {
+                // Live Hit
+                stats.live++;
+                
+                // Show Live Box
+                const liveWrapper = document.getElementById("liveBoxWrapper");
+                if (!liveWrapper.classList.contains("show")) {
+                    liveWrapper.classList.add("show");
+                    // On mobile, smooth scroll to live box
+                    if(window.innerWidth < 950) {
+                        liveWrapper.scrollIntoView({ behavior: 'smooth' });
+                    }
+                }
+
+                const subInfo = `${countryName} ${countryEmoji} - ${currency}`;
+                addLiveCardToSideBox(card, msg, subInfo);
+
+            } else if (code === 0) {
+                stats.die++;
+                addLogCard("die", card, msg, "Declined");
+            } else {
+                stats.die++;
+                addLogCard("unknown", card, msg, "Unknown");
+            }
+        }
+
+        function showLoadingCard(id, card) {
+            const container = document.getElementById("logContainer");
+            const div = document.createElement("div");
+            div.id = id;
+            div.className = "res-card unknown";
+            div.innerHTML = `
+                <div class="res-icon"><i class="fas fa-circle-notch fa-spin"></i></div>
+                <div class="res-content">
+                    <span class="res-cc">${card}</span>
+                    <span class="res-info">Checking...</span>
+                </div>
+            `;
+            container.prepend(div);
+        }
+
+        function addLogCard(status, card, message, badgeText) {
+            const container = document.getElementById("logContainer");
+            const div = document.createElement("div");
+            let icon = "fa-times-circle";
+            if (status === "unknown") icon = "fa-question-circle";
+
+            div.className = `res-card ${status}`;
+            div.innerHTML = `
+                <div class="res-icon"><i class="fas ${icon}"></i></div>
+                <div class="res-content">
+                    <span class="res-cc">${card}</span>
+                    <span class="res-info">${message}</span>
+                    <br>
+                    <span class="res-badge">${badgeText}</span>
+                </div>
+            `;
+            container.prepend(div);
+        }
+
+        function addLiveCardToSideBox(card, message, subInfo) {
+            const container = document.getElementById("liveResultsList");
+            const div = document.createElement("div");
+            div.className = "res-card premium-live";
+            div.innerHTML = `
+                <div class="res-icon"><i class="fas fa-check-circle"></i></div>
+                <div class="res-content">
+                    <span class="res-cc" style="color:#00ff7f">${card}</span>
+                    <span class="res-info" style="color:#fff">${message}</span>
+                    <br>
+                    <span class="res-badge" style="background:rgba(0,255,127,0.2); color:#00ff7f">Approved</span>
+                    <span class="res-badge">${subInfo}</span>
+                </div>
+            `;
+            container.prepend(div);
+        }
+
+        function updateStats() {
+            document.getElementById("liveCount").innerText = stats.live;
+            document.getElementById("dieCount").innerText = stats.die;
+            document.getElementById("totalCount").innerText = stats.total;
+        }
+    </script>
+</body>
+</html>
